@@ -81,6 +81,14 @@ public class Bob {
         //send session key to Alice now?
         a_out.print(Ks);
 
+        String answer = a_in.readLine();
+        if(answer.equals("success")) {
+            System.out.println(Ks);
+            System.out.println("Needleshoes has been a success!");
+        }
+
+        toAlice.close();
+
 
     }
 

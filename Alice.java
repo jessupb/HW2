@@ -132,8 +132,12 @@ public class Alice {
         String Ks_FromBob = A2Bin.readLine();
 
         if(Ks_FromBob.equals(Ks)) {
+            A2Bout.print("success");
             System.out.println("Needleshoes has been a success!");
+            System.out.println(Ks);
         }
+
+        A2B.close();
 
     }
 
