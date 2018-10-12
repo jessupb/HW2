@@ -1,3 +1,3 @@
 # HW2
 
-ReadMe Placeholder
+Please see HW2_README.docx for formatted README file.
