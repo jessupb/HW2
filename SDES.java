@@ -399,43 +399,43 @@ public class SDES {
         String out;
         //int[] decrypted = new int[8];
 
-        if (args[0].equals("encrypt")) {
-            try {
-                in = args[1];
-                key = args[2];
-                KG.generate(key);
-                out_int = enc.encrypt(in, KG.getK1(), KG.getK2());
-                String out_string1 = Arrays.toString(out_int).replaceAll(",\\s+", "");
-                String out_string2 = out_string1.replaceAll("\\[", "");
-                out = out_string2.replaceAll("]", "");
-                //need to find some way to return this ciphertext
-            }
-            catch(InputMismatchException e) {
-                System.out.println("Error occurred: Invalid Input");
-            }
-            catch(Exception e) {
-                System.out.println("Error occurred" + e);
-            }
-        }
-
-        if (args[0].equals("decrypt")) {
-            try {
-                in = args[1];
-                key = args[2];
-                KG.generate(key);
-                out_int = enc.encrypt(in, KG.getK2(), KG.getK1());
-                String out_string1 = Arrays.toString(out_int).replaceAll(",\\s+", "");
-                String out_string2 = out_string1.replaceAll("\\[", "");
-                out = out_string2.replaceAll("]", "");
-                //need to find some way to return this decrypted text
-            }
-            catch(InputMismatchException e) {
-                System.out.println("Error occurred: Invalid Input");
-            }
-            catch(Exception e) {
-                System.out.println("Error occurred" + e);
-            }
-        }
+//        if (args[0].equals("encrypt")) {
+//            try {
+//                in = args[1];
+//                key = args[2];
+//                KG.generate(key);
+//                out_int = enc.encrypt(in, KG.getK1(), KG.getK2());
+//                String out_string1 = Arrays.toString(out_int).replaceAll(",\\s+", "");
+//                String out_string2 = out_string1.replaceAll("\\[", "");
+//                out = out_string2.replaceAll("]", "");
+//                //need to find some way to return this ciphertext
+//            }
+//            catch(InputMismatchException e) {
+//                System.out.println("Error occurred: Invalid Input");
+//            }
+//            catch(Exception e) {
+//                System.out.println("Error occurred" + e);
+//            }
+//        }
+//
+//        if (args[0].equals("decrypt")) {
+//            try {
+//                in = args[1];
+//                key = args[2];
+//                KG.generate(key);
+//                out_int = enc.encrypt(in, KG.getK2(), KG.getK1());
+//                String out_string1 = Arrays.toString(out_int).replaceAll(",\\s+", "");
+//                String out_string2 = out_string1.replaceAll("\\[", "");
+//                out = out_string2.replaceAll("]", "");
+//                //need to find some way to return this decrypted text
+//            }
+//            catch(InputMismatchException e) {
+//                System.out.println("Error occurred: Invalid Input");
+//            }
+//            catch(Exception e) {
+//                System.out.println("Error occurred" + e);
+//            }
+//        }
 //        try {
 //            System.out.println("Enter 8-bit Plaintext: ");
 //            pt = s.next();

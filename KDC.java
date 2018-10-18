@@ -1,4 +1,4 @@
-import com.sun.security.ntlm.Server;
+//import com.sun.security.ntlm.Server;
 
 import java.io.*;
 import java.lang.*;
@@ -20,8 +20,9 @@ public class KDC {
     static String N2;
     static String Step2_Encrypted_Kb;
     static String Step2_Encrypted_Ka;
+    static int portNumber = 3333;
     public static void main(String[] args) throws IOException {
-        ServerSocket KDC = new ServerSocket(0);
+        ServerSocket KDC = new ServerSocket(portNumber);
         Socket toAlice_CDH = KDC.accept();
         PrintWriter a0_out = new PrintWriter(toAlice_CDH.getOutputStream(), true);
         BufferedReader a0_in = new BufferedReader(new InputStreamReader(toAlice_CDH.getInputStream()));
@@ -29,53 +30,105 @@ public class KDC {
         //start CDH with AliceCDH
         int b = ThreadLocalRandom.current().nextInt(1, 1022);
 
-        int g_b_unmod = (int)Math.pow(g, b);
-        int g_b = g_b_unmod%prime;
-        a0_out.print(g_b);
+        System.out.println("Accepted connection from Alice");
+
+        System.out.println("b=" + b);
+
+        //int g_b_unmod = (int)Math.pow(g, b);
+        int g_b = 1;
+        for(int i=0; i<b; i++) {
+            g_b = (g_b*g)%prime;
+        }
+        System.out.println("g_b=" + g_b);
+        //int g_b = g_b_unmod%prime;
+
+        a0_out.println(g_b);
+        //a0_out.flush();
+
+        System.out.println("Sent g_b=" + g_b);
 
         //KDC receives g_a from Alice
-        int g_a = a0_in.read();
+        System.out.println("Waiting for g_a from Alice");
+        String g_a_string = a0_in.readLine();
+        int g_a = Integer.parseInt(g_a_string);
+        System.out.println("Received g_a=" + g_a);
         //KDC computes (g^a)^b mod p, sends to Alice
-        int g_a_b_unmod = (int)Math.pow(g_a, b);
-        int g_a_b = g_a_b_unmod%prime;
-        a0_out.print(g_a_b);
+        int g_a_b = 1;
+        for(int i=0; i<b; i++) {
+            g_a_b = (g_a_b*g_a)%prime;
+        }
+        //int g_a_b_unmod = (int)Math.pow(g_a, b);
+        //int g_a_b = g_a_b_unmod%prime;
+        a0_out.println(g_a_b);
+        //a0_out.flush();
 
-        int g_b_a = a0_in.read();
+        System.out.println("Sent g_a_b=" + g_a_b);
+
+        String g_b_a_string = a0_in.readLine();
+        int g_b_a = Integer.parseInt(g_b_a_string);
+        System.out.println("Received g_b_a=" + g_b_a);
+
+        if(g_b_a != g_a_b) {
+            System.out.println("CDH Failed");
+        }
 
         if(g_b_a == g_a_b) {
             System.out.println("Diffie-Hellman Completed Successfully! -KDC");
             Ka = g_a_b;
             Ka_string = Integer.toBinaryString(Ka);
+            if(Ka_string.length() < 10) {
+                int difference = 10 - Ka_string.length();
+                for(int i=0; i<difference; i++) {
+                    String pad = "0";
+                    Ka_string = pad.concat(Ka_string);
+                }
+            }
         }
 
         //at this point, AliceCDH will disconnect, BobCDH will connect
 
         toAlice_CDH.close();
 
+        System.out.println("KDC disconnects from Alice");
+
         Socket toBob_CDH = KDC.accept();
         PrintWriter b_out = new PrintWriter(toBob_CDH.getOutputStream(), true);
         BufferedReader b_in = new BufferedReader(new InputStreamReader(toBob_CDH.getInputStream()));
+
+        System.out.println("KDC established connection with Bob for CDH");
 
         //pick a new random variable within range
         int d = ThreadLocalRandom.current().nextInt(1, 1022);
 
         int g_d_unmod = (int)Math.pow(g, d);
         int g_d = g_d_unmod%prime;
-        b_out.print(g_d);
+        b_out.println(g_d);
+        //b_out.flush();
 
         //KDC receives g_c from Bob
-        int g_c = b_in.read();
+        String g_c_string = b_in.readLine();
+        int g_c = Integer.parseInt(g_c_string);
         //KDC computes (g^a)^b mod p, sends to Bob
         int g_c_d_unmod = (int)Math.pow(g_c, d);
         int g_c_d = g_c_d_unmod%prime;
-        b_out.print(g_c_d);
+        b_out.println(g_c_d);
+        //b_out.flush();
 
-        int g_d_c = b_in.read();
+        String g_d_c_string = b_in.readLine();
+        int g_d_c = Integer.parseInt(g_d_c_string);
 
         if(g_d_c == g_c_d) {
             System.out.println("Diffie-Hellman Completed Successfully! -KDC");
             Kb = g_c_d;
             Kb_string = Integer.toBinaryString(Kb);
+            System.out.println("Kb_string length " + Kb_string.length());
+            if(Kb_string.length() < 10) {
+                int difference = 10 - Kb_string.length();
+                for(int i=0; i<difference; i++) {
+                    String pad = "0";
+                    Kb_string = pad.concat(Kb_string);
+                }
+            }
         }
         //CDH is done, terminate connection to Bob
         toBob_CDH.close();
@@ -84,6 +137,8 @@ public class KDC {
         Socket toAlice_Step1 = KDC.accept();
         PrintWriter a1_out = new PrintWriter(toAlice_Step1.getOutputStream(), true);
         BufferedReader a1_in = new BufferedReader(new InputStreamReader(toAlice_Step1.getInputStream()));
+
+        System.out.println("KDC established connection with Alice for N-S Step 1");
 
         //KDC receives concatenated string
         //we know IDa, IDb are each 16-bits (2 bytes) long, N1 is 32-bits (4 bytes) -- KDC "skips ahead" to get N1
@@ -150,7 +205,7 @@ public class KDC {
 
         List<String> step2Ka_blocks = split(step2Ka, 8);
         for(String block : step2Ka_blocks) {
-            int[] ka2out_int = encKb.encrypt(block, KGKa.getK1(), KGKa.getK2());
+            int[] ka2out_int = encKa.encrypt(block, KGKa.getK1(), KGKa.getK2());
             String ka2out_string1 = Arrays.toString(ka2out_int).replaceAll(",\\s+", "");
             String ka2out_string2 = ka2out_string1.replaceAll("\\[", "");
             String ka2out_string = ka2out_string2.replaceAll("]", "");
@@ -158,11 +213,14 @@ public class KDC {
         }
 
         //now, step 2 is finished, send this Ka encrypted packet back to Alice
-        a1_out.print(Step2_Encrypted_Ka);
+        a1_out.println(Step2_Encrypted_Ka);
+        //a1_out.flush();
 
         //the KDC's job is now complete
         toAlice_Step1.close();
         KDC.close();
+
+        System.out.println("KDC completed Step 1 with Alice. My job is now complete!");
 
     }
 

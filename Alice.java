@@ -22,27 +22,64 @@ public class Alice {
         PrintWriter cdh_out = new PrintWriter(AliceCDH.getOutputStream(),true);
         BufferedReader cdh_in = new BufferedReader(new InputStreamReader(AliceCDH.getInputStream()));
         //start CDH with KDC
+        System.out.println("Established connection to KDC");
         int a = ThreadLocalRandom.current().nextInt(1, 1022);
-        int g_a_unmod = (int)Math.pow(g, a);
-        int g_a = g_a_unmod%prime;
+
+        System.out.println("a=" + a);
+
+        //int g_a_unmod = (int)Math.pow(g, a);
+        int g_a = 1;
+        for(int i=0; i<a; i++) {
+            g_a = (g_a*g)%prime;
+        }
+        System.out.println("g_a=" + g_a);
+        //int g_a = g_a_unmod%prime;
         //Alice sends g^a mod p to the KDC
-        cdh_out.print(g_a);
+        System.out.println("Sending g_a=" + g_a + " to KDC");
+        cdh_out.println(g_a);
+        //cdh_out.flush();
 
         //Alice receives g^b mod p from the KDC
-        int g_b = cdh_in.read();
+        String g_b_string = cdh_in.readLine();
+        int g_b = Integer.parseInt(g_b_string);
+        System.out.println("Received g_b=" + g_b);
 
         //Alice calculates (g^b)^a mod p, sends to KDC
-        int g_b_a_unmod = (int)Math.pow(g_b, a);
-        int g_b_a = g_b_a_unmod%prime;
-        cdh_out.print(g_b_a);
+        //int g_b_a_unmod = (int)Math.pow(g_b, a);
+        int g_b_a = 1;
+        for(int i=0; i<a; i++) {
+            g_b_a = (g_b_a*g_b)%prime;
+        }
+        //int g_b_a = g_b_a_unmod%prime;
+        System.out.println("g_b_a: " + g_b_a);
+        cdh_out.println(g_b_a);
+        //cdh_out.flush();
 
-        int g_a_b = cdh_in.read();
+        System.out.println("Sent g_b_a=" + g_b_a);
+
+        String g_a_b_string = cdh_in.readLine();
+        int g_a_b = Integer.parseInt(g_a_b_string);
+        System.out.println("Received g_a_b=" + g_a_b);
+
+        if(g_b_a != g_a_b) {
+            System.out.println("CDH Failed");
+        }
 
         if(g_b_a == g_a_b) {
             System.out.println("Diffie-Hellman Completed Successfully! -Alice");
             Ka = g_b_a;
             Ka_string = Integer.toBinaryString(Ka);
+            System.out.println("Ka_string length " + Ka_string.length());
+            if(Ka_string.length() < 10) {
+                int difference = 10 - Ka_string.length();
+                for(int i=0; i<difference; i++) {
+                    String pad = "0";
+                    Ka_string = pad.concat(Ka_string);
+                }
+            }
         }
+        //System.out.println(Ka);
+        //System.out.println(Ka_string);
 
         AliceCDH.close();
 
@@ -84,15 +121,19 @@ public class Alice {
         BufferedReader A2KDCin = new BufferedReader(new InputStreamReader(A2KDC.getInputStream()));
 
         //concatenate IDa || IDb || N1 for Alice to send to KDC
+        System.out.println("Alice sends initial packet to KDC");
         String step1 = IDa.concat(IDb).concat(N1);
-        A2KDCout.print(step1);
+        A2KDCout.println(step1);
+        //A2KDCout.flush();
 
         //now Alice receives Ka packet from KDC
         String KaPacket = A2KDCin.readLine();
+        System.out.println("Alice received KaPacket from KDC");
 
         KeyGen KGKa = new KeyGen();
         Encryption eKa = new Encryption();
 
+        System.out.println(Ka_string);
         KGKa.generate(Ka_string);
 
         //Alice now decrypts KaPacket byte by byte to receive the session key
@@ -121,18 +162,23 @@ public class Alice {
             KbPacket = KbPacket.concat(KaPacket_dBlocks.get(i));
         }
 
+        A2KDC.close();
+
         //finally, Alice is ready to talk to Bob
         Socket A2B = new Socket("127.0.0.1", portNumber);
         PrintWriter A2Bout = new PrintWriter(A2B.getOutputStream(),true);
         BufferedReader A2Bin = new BufferedReader(new InputStreamReader(A2B.getInputStream()));
 
-        A2Bout.print(KbPacket);
+        System.out.println("Alice sends KbPacket to Bob");
+        A2Bout.println(KbPacket);
+        //A2Bout.flush();
 
         //now Alice receives the decrypted session key from Bob, checks to make sure
         String Ks_FromBob = A2Bin.readLine();
 
         if(Ks_FromBob.equals(Ks)) {
-            A2Bout.print("success");
+            A2Bout.println("success");
+            //A2Bout.flush();
             System.out.println("Needleshoes has been a success!");
             System.out.println(Ks);
         }

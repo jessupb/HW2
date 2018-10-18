@@ -19,33 +19,58 @@ public class Bob {
         PrintWriter b_out = new PrintWriter(BobCDH.getOutputStream(),true);
         BufferedReader b_in = new BufferedReader(new InputStreamReader(BobCDH.getInputStream()));
 
+        System.out.println("Bob established connection with KDC");
         //start CDH with KDC
         int c = ThreadLocalRandom.current().nextInt(1, 1022);
-        int g_c_unmod = (int)Math.pow(g, c);
-        int g_c = g_c_unmod%prime;
+        //int g_c_unmod = (int)Math.pow(g, c);
+        int g_c = 1;
+        for(int i=0; i<c; i++) {
+            g_c = (g_c*g)%prime;
+        }
         //Bob sends g^c mod p to the KDC
-        b_out.print(g_c);
+        System.out.println("Bob sends g_c to KDC");
+        b_out.println(g_c);
+        //b_out.flush();
 
         //Bob receives g^d mod p from the KDC
-        int g_d = b_in.read();
+        String g_d_string = b_in.readLine();
+        int g_d = Integer.parseInt(g_d_string);
         //Bob calculates (g^d)^c mod p, sends to KDC
-        int g_d_c_unmod = (int)Math.pow(g_d, c);
-        int g_d_c = g_d_c_unmod%prime;
-        b_out.print(g_d_c);
+        //int g_d_c_unmod = (int)Math.pow(g_d, c);
+        int g_d_c = 1;
+        for(int i=0; i<c; i++) {
+            g_d_c = (g_d_c*g_d)%prime;
+        }
+        b_out.println(g_d_c);
+        //b_out.flush();
 
-        int g_c_d = b_in.read();
+        String g_c_d_string = b_in.readLine();
+        int g_c_d = Integer.parseInt(g_c_d_string);
+
+        if(g_c_d != g_d_c) {
+            System.out.println("CDH Failed");
+        }
 
         if(g_c_d == g_d_c) {
             System.out.println("Diffie-Hellman Completed Successfully! -Bob");
             Kb = g_c_d;
             Kb_string = Integer.toBinaryString(Kb);
+            if(Kb_string.length() < 10) {
+                int difference = 10 - Kb_string.length();
+                for (int i = 0; i < difference; i++) {
+                    String pad = "0";
+                    Kb_string = pad.concat(Kb_string);
+                }
+            }
         }
 
         BobCDH.close();
 
         //now that Bob has key Kb with the KDH, Bob becomes a server to connect to Alice to begin Needham-Schroeder
-        ServerSocket Bob = new ServerSocket(0);
+        ServerSocket Bob = new ServerSocket(portNumber);
         Socket toAlice = Bob.accept();
+
+        System.out.println("Bob accepted connection from Alice");
 
         PrintWriter a_out = new PrintWriter(toAlice.getOutputStream(), true);
         BufferedReader a_in = new BufferedReader(new InputStreamReader(toAlice.getInputStream()));
@@ -79,7 +104,8 @@ public class Bob {
         //hooray! Bob now has the session key
 
         //send session key to Alice now?
-        a_out.print(Ks);
+        a_out.println(Ks);
+        //a_out.flush();
 
         String answer = a_in.readLine();
         if(answer.equals("success")) {
