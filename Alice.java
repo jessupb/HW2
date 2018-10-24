@@ -10,6 +10,7 @@ public class Alice {
     final static int prime = 1021;
     final static int g = 10;
     static int portNumber = 3333;
+    static int portNumber_AB = 3335;
     static int Ka = 0;
     static String Ka_string;
     public static String IDa;
@@ -19,6 +20,7 @@ public class Alice {
     static String KbPacket;
     public static void main(String[] args) throws IOException {
         Socket AliceCDH = new Socket("127.0.0.1", portNumber);
+        AliceCDH.setSoTimeout(2000);
         PrintWriter cdh_out = new PrintWriter(AliceCDH.getOutputStream(),true);
         BufferedReader cdh_in = new BufferedReader(new InputStreamReader(AliceCDH.getInputStream()));
         //start CDH with KDC
@@ -117,18 +119,20 @@ public class Alice {
         N1 = N1_string2.replaceAll("]", "");
 
         Socket A2KDC = new Socket("127.0.0.1", portNumber);
+        A2KDC.setSoTimeout(2000);
         PrintWriter A2KDCout = new PrintWriter(A2KDC.getOutputStream(),true);
         BufferedReader A2KDCin = new BufferedReader(new InputStreamReader(A2KDC.getInputStream()));
 
         //concatenate IDa || IDb || N1 for Alice to send to KDC
-        System.out.println("Alice sends initial packet to KDC");
         String step1 = IDa.concat(IDb).concat(N1);
+        System.out.println("Alice sends initial packet to KDC " + step1);
         A2KDCout.println(step1);
         //A2KDCout.flush();
 
         //now Alice receives Ka packet from KDC
         String KaPacket = A2KDCin.readLine();
         System.out.println("Alice received KaPacket from KDC");
+        System.out.println(KaPacket);
 
         KeyGen KGKa = new KeyGen();
         Encryption eKa = new Encryption();
@@ -141,6 +145,7 @@ public class Alice {
         List<String> KaPacket_blocks = split(KaPacket, 8);
         List<String> KaPacket_dBlocks = new ArrayList<String>();
         for(String block : KaPacket_blocks) {
+            System.out.println(block);
             //use subkeys in reverse order
             int[] KaPout_int = eKa.encrypt(block, KGKa.getK2(), KGKa.getK1());
             String KaPout_string1 = Arrays.toString(KaPout_int).replaceAll(",\\s+", "");
@@ -152,8 +157,10 @@ public class Alice {
 
         //we know session key Ks is the first 2 8-bit blocks or elements of KaPacket_dBlocks
         String Ks_padded = KaPacket_dBlocks.get(0).concat(KaPacket_dBlocks.get(1));
+        System.out.println("Ks_padded = " + Ks_padded);
         //we know Ks_padded has 6 leading zeros in elements 0-5
         String Ks = Ks_padded.substring(6, 15);
+        System.out.println("Session key Ks = " + Ks);
         //hooray! Alice now has the session key
 
         //now Alice must retrieve encrypted KbPacket to send to Bob
@@ -165,7 +172,7 @@ public class Alice {
         A2KDC.close();
 
         //finally, Alice is ready to talk to Bob
-        Socket A2B = new Socket("127.0.0.1", portNumber);
+        Socket A2B = new Socket("127.0.0.1", portNumber_AB);
         PrintWriter A2Bout = new PrintWriter(A2B.getOutputStream(),true);
         BufferedReader A2Bin = new BufferedReader(new InputStreamReader(A2B.getInputStream()));
 

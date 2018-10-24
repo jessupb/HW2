@@ -149,13 +149,16 @@ class Encryption {
         char c;
         String ts;
         try {
+            System.out.println(pt);
             for(int i=0; i<8; i++) {
                 c = pt.charAt(i);
                 ts = Character.toString(c);
                 plain[i] = Integer.parseInt(ts);
+                System.out.println(plain[i]);
 
                 if(plain[i] != 0 && plain[i] != 1) {
                     System.out.println("Invalid plaintext!");
+                    System.out.println(plain[i]);
                     System.exit(0);
                     return;
                 }

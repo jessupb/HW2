@@ -9,13 +9,15 @@ import java.net.*;
 public class Bob {
     final static int prime = 1021;
     final static int g = 10;
-    static int portNumber = 3333;
+    static int portNumber = 3334;
+    static int portNumber_AB = 3335;
     static int Kb = 0;
     static String Kb_string;
     static String KbPacket_Decrypted;
     public static void main(String[] args) throws IOException {
 
         Socket BobCDH = new Socket("127.0.0.1", portNumber);
+        BobCDH.setSoTimeout(2000);
         PrintWriter b_out = new PrintWriter(BobCDH.getOutputStream(),true);
         BufferedReader b_in = new BufferedReader(new InputStreamReader(BobCDH.getInputStream()));
 
@@ -29,23 +31,28 @@ public class Bob {
         }
         //Bob sends g^c mod p to the KDC
         System.out.println("Bob sends g_c to KDC");
+        System.out.println("Sending g_c=" + g_c + " to KDC");
         b_out.println(g_c);
         //b_out.flush();
 
         //Bob receives g^d mod p from the KDC
         String g_d_string = b_in.readLine();
         int g_d = Integer.parseInt(g_d_string);
+        System.out.println("Received g_d=" + g_d);
+
         //Bob calculates (g^d)^c mod p, sends to KDC
         //int g_d_c_unmod = (int)Math.pow(g_d, c);
         int g_d_c = 1;
         for(int i=0; i<c; i++) {
             g_d_c = (g_d_c*g_d)%prime;
         }
+        System.out.println("g_d_c: " + g_d_c);
         b_out.println(g_d_c);
         //b_out.flush();
 
         String g_c_d_string = b_in.readLine();
         int g_c_d = Integer.parseInt(g_c_d_string);
+        System.out.println("Received g_c_d=" + g_c_d);
 
         if(g_c_d != g_d_c) {
             System.out.println("CDH Failed");
@@ -67,8 +74,9 @@ public class Bob {
         BobCDH.close();
 
         //now that Bob has key Kb with the KDH, Bob becomes a server to connect to Alice to begin Needham-Schroeder
-        ServerSocket Bob = new ServerSocket(portNumber);
+        ServerSocket Bob = new ServerSocket(portNumber_AB);
         Socket toAlice = Bob.accept();
+        toAlice.setSoTimeout(2000);
 
         System.out.println("Bob accepted connection from Alice");
 

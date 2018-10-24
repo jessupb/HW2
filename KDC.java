@@ -20,10 +20,16 @@ public class KDC {
     static String N2;
     static String Step2_Encrypted_Kb;
     static String Step2_Encrypted_Ka;
-    static int portNumber = 3333;
+    static int portNumber_A = 3333;
+    static int portNumber_B = 3334;
     public static void main(String[] args) throws IOException {
-        ServerSocket KDC = new ServerSocket(portNumber);
-        Socket toAlice_CDH = KDC.accept();
+        Step2_Encrypted_Ka = "";
+        Step2_Encrypted_Kb = "";
+
+        ServerSocket KDC_A = new ServerSocket(portNumber_A);
+        KDC_A.setSoTimeout(2000);
+        Socket toAlice_CDH = KDC_A.accept();
+        toAlice_CDH.setSoTimeout(2000);
         PrintWriter a0_out = new PrintWriter(toAlice_CDH.getOutputStream(), true);
         BufferedReader a0_in = new BufferedReader(new InputStreamReader(toAlice_CDH.getInputStream()));
         //assume AliceCDH connects first
@@ -91,7 +97,10 @@ public class KDC {
 
         System.out.println("KDC disconnects from Alice");
 
-        Socket toBob_CDH = KDC.accept();
+        ServerSocket KDC_B = new ServerSocket(portNumber_B);
+        KDC_B.setSoTimeout(2000);
+        Socket toBob_CDH = KDC_B.accept();
+        toBob_CDH.setSoTimeout(2000);
         PrintWriter b_out = new PrintWriter(toBob_CDH.getOutputStream(), true);
         BufferedReader b_in = new BufferedReader(new InputStreamReader(toBob_CDH.getInputStream()));
 
@@ -100,22 +109,39 @@ public class KDC {
         //pick a new random variable within range
         int d = ThreadLocalRandom.current().nextInt(1, 1022);
 
-        int g_d_unmod = (int)Math.pow(g, d);
-        int g_d = g_d_unmod%prime;
+        int g_d = 1;
+        for(int i=0; i<d; i++) {
+            g_d = (g_d*g)%prime;
+        }
+
+//        int g_d_unmod = (int)Math.pow(g, d);
+//        int g_d = g_d_unmod%prime;
+
         b_out.println(g_d);
         //b_out.flush();
+        System.out.println("Sent g_d=" + g_d);
 
         //KDC receives g_c from Bob
         String g_c_string = b_in.readLine();
         int g_c = Integer.parseInt(g_c_string);
+        System.out.println("Received g_c from Bob=" + g_c);
         //KDC computes (g^a)^b mod p, sends to Bob
-        int g_c_d_unmod = (int)Math.pow(g_c, d);
-        int g_c_d = g_c_d_unmod%prime;
+
+        int g_c_d = 1;
+        for(int i=0; i<d; i++) {
+            g_c_d = (g_c_d*g_c)%prime;
+        }
+
+//        int g_c_d_unmod = (int)Math.pow(g_c, d);
+//        int g_c_d = g_c_d_unmod%prime;
         b_out.println(g_c_d);
+
+        System.out.println("Sent g_c_d=" + g_c_d);
         //b_out.flush();
 
         String g_d_c_string = b_in.readLine();
         int g_d_c = Integer.parseInt(g_d_c_string);
+        System.out.println("Received g_d_c=" + g_d_c);
 
         if(g_d_c == g_c_d) {
             System.out.println("Diffie-Hellman Completed Successfully! -KDC");
@@ -132,9 +158,11 @@ public class KDC {
         }
         //CDH is done, terminate connection to Bob
         toBob_CDH.close();
+        KDC_B.close();
 
         ///now NeedleShoes can begin; establish connection with Alice again for Step 1-2
-        Socket toAlice_Step1 = KDC.accept();
+        Socket toAlice_Step1 = KDC_A.accept();
+        toAlice_Step1.setSoTimeout(2000);
         PrintWriter a1_out = new PrintWriter(toAlice_Step1.getOutputStream(), true);
         BufferedReader a1_in = new BufferedReader(new InputStreamReader(toAlice_Step1.getInputStream()));
 
@@ -143,12 +171,14 @@ public class KDC {
         //KDC receives concatenated string
         //we know IDa, IDb are each 16-bits (2 bytes) long, N1 is 32-bits (4 bytes) -- KDC "skips ahead" to get N1
         String receive = a1_in.readLine();
-        String N1 = receive.substring(receive.length() - 32);
+        System.out.println("Received from Alice: " + receive);
+        String N1 = receive.substring(31, receive.length());
         String IDa = receive.substring(0, 15);
-        String IDb = receive.substring(16,31);
+        String IDb = receive.substring(15,31);
 
         //KDC checks to make sure it separated the string correctly
         String test = IDa.concat(IDb).concat(N1);
+        System.out.println("String test = " + test);
 
         if(!test.equals(receive)) {
             System.out.println("Problem processing Step 1");
@@ -187,7 +217,9 @@ public class KDC {
         ////now, divide step2Kb into 8-bit blocks to be encrypted and then concatenated
 
         List<String> step2Kb_blocks = split(step2Kb, 8);
+        //System.out.println(step2Kb_blocks);
         for(String block : step2Kb_blocks) {
+            //System.out.println(block);
             int[] kb2out_int = encKb.encrypt(block, KGKb.getK1(), KGKb.getK2());
             String kb2out_string1 = Arrays.toString(kb2out_int).replaceAll(",\\s+", "");
             String kb2out_string2 = kb2out_string1.replaceAll("\\[", "");
@@ -212,13 +244,14 @@ public class KDC {
             Step2_Encrypted_Ka = Step2_Encrypted_Ka.concat(ka2out_string);
         }
 
+        //System.out.println(Step2_Encrypted_Ka);
         //now, step 2 is finished, send this Ka encrypted packet back to Alice
         a1_out.println(Step2_Encrypted_Ka);
         //a1_out.flush();
 
         //the KDC's job is now complete
         toAlice_Step1.close();
-        KDC.close();
+        KDC_A.close();
 
         System.out.println("KDC completed Step 1 with Alice. My job is now complete!");
 
