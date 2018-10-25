@@ -171,14 +171,18 @@ public class KDC {
         //KDC receives concatenated string
         //we know IDa, IDb are each 16-bits (2 bytes) long, N1 is 32-bits (4 bytes) -- KDC "skips ahead" to get N1
         String receive = a1_in.readLine();
-        System.out.println("Received from Alice: " + receive);
-        String N1 = receive.substring(31, receive.length());
-        String IDa = receive.substring(0, 15);
-        String IDb = receive.substring(15,31);
+        System.out.println("Received from Alice: " + receive + "of length " + receive.length());
+        String N1 = receive.substring(32, receive.length());
+        String IDa = receive.substring(0, 16);
+        String IDb = receive.substring(16,32);
+
+        System.out.println("IDa length " + IDa.length());
+        System.out.println("IDb length " + IDb.length());
+        System.out.println("N1 length " + N1.length());
 
         //KDC checks to make sure it separated the string correctly
         String test = IDa.concat(IDb).concat(N1);
-        System.out.println("String test = " + test);
+        System.out.println("String test = " + test + "of length " + test.length());
 
         if(!test.equals(receive)) {
             System.out.println("Problem processing Step 1");
@@ -210,10 +214,13 @@ public class KDC {
         ///pad the session key with 6 leading 0s to make it the same 16-bit/2byte length as IDa
         String Ks_pad = "000000";
         String Ks_string_padded = Ks_pad.concat(Ks_string);
+        System.out.println("Ks_string_padded length " + Ks_string_padded.length());
 
         //now encrypt Ks || IDa || N2 with key Kb
         KGKb.generate(Kb_string);
         String step2Kb = Ks_string_padded.concat(IDa).concat(N2);
+        System.out.println("IDa length = " + IDa.length());
+        System.out.println("step2Kb length = " + step2Kb.length());
         ////now, divide step2Kb into 8-bit blocks to be encrypted and then concatenated
 
         List<String> step2Kb_blocks = split(step2Kb, 8);

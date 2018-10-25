@@ -117,6 +117,7 @@ public class Alice {
         String N1_string1 = Arrays.toString(N1_int).replaceAll(",\\s+", "");
         String N1_string2 = N1_string1.replaceAll("\\[", "");
         N1 = N1_string2.replaceAll("]", "");
+        System.out.println("N1 length: " + N1.length());
 
         Socket A2KDC = new Socket("127.0.0.1", portNumber);
         A2KDC.setSoTimeout(2000);
