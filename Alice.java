@@ -19,6 +19,7 @@ public class Alice {
     static String KaPacket_Decrypted;
     static String KbPacket;
     public static void main(String[] args) throws IOException {
+        KbPacket = "";
         Socket AliceCDH = new Socket("127.0.0.1", portNumber);
         AliceCDH.setSoTimeout(2000);
         PrintWriter cdh_out = new PrintWriter(AliceCDH.getOutputStream(),true);
@@ -152,7 +153,8 @@ public class Alice {
             String KaPout_string1 = Arrays.toString(KaPout_int).replaceAll(",\\s+", "");
             String KaPout_string2 = KaPout_string1.replaceAll("\\[", "");
             String KaPout_string = KaPout_string2.replaceAll("]", "");
-            KaPacket_Decrypted = KaPacket_Decrypted.concat(KaPout_string);
+            System.out.println("KaPacket Decrypted block: " + KaPout_string);
+            //KaPacket_Decrypted = KaPacket_Decrypted.concat(KaPout_string);
             KaPacket_dBlocks.add(KaPout_string);
         }
 
@@ -160,13 +162,13 @@ public class Alice {
         String Ks_padded = KaPacket_dBlocks.get(0).concat(KaPacket_dBlocks.get(1));
         System.out.println("Ks_padded = " + Ks_padded);
         //we know Ks_padded has 6 leading zeros in elements 0-5
-        String Ks = Ks_padded.substring(6, 15);
+        String Ks = Ks_padded.substring(6, 16);
         System.out.println("Session key Ks = " + Ks);
         //hooray! Alice now has the session key
 
         //now Alice must retrieve encrypted KbPacket to send to Bob
         //because we have fixed variable lengths, KbPacket is elements 8-16 of KaPacket_dBlocks
-        for(int i=8; i<17; i++) {
+        for(int i=8; i<16; i++) {
             KbPacket = KbPacket.concat(KaPacket_dBlocks.get(i));
         }
 
@@ -177,12 +179,14 @@ public class Alice {
         PrintWriter A2Bout = new PrintWriter(A2B.getOutputStream(),true);
         BufferedReader A2Bin = new BufferedReader(new InputStreamReader(A2B.getInputStream()));
 
-        System.out.println("Alice sends KbPacket to Bob");
+        System.out.println("Alice sends KbPacket to Bob " + KbPacket);
         A2Bout.println(KbPacket);
         //A2Bout.flush();
+        //System.out.println(KbPacket);
 
         //now Alice receives the decrypted session key from Bob, checks to make sure
         String Ks_FromBob = A2Bin.readLine();
+        System.out.println("Received Ks from Bob: " + Ks_FromBob);
 
         if(Ks_FromBob.equals(Ks)) {
             A2Bout.println("success");

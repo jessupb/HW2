@@ -84,6 +84,7 @@ public class Bob {
         BufferedReader a_in = new BufferedReader(new InputStreamReader(toAlice.getInputStream()));
 
         String KbPacket = a_in.readLine();
+        System.out.println("Received KbPacket from Alice: " + KbPacket);
 
         //Bob will now decrypt this packet using private key Kb shared with the KDC
 
@@ -100,15 +101,17 @@ public class Bob {
             String KbPout_string1 = Arrays.toString(KaPout_int).replaceAll(",\\s+", "");
             String KbPout_string2 = KbPout_string1.replaceAll("\\[", "");
             String KbPout_string = KbPout_string2.replaceAll("]", "");
-            KbPacket_Decrypted = KbPacket_Decrypted.concat(KbPout_string);
+            //KbPacket_Decrypted = KbPacket_Decrypted.concat(KbPout_string);
             KbPacket_dBlocks.add(KbPout_string);
         }
 
         //since session key Ks contained in the first 2 bytes, we know where to look:
         //we know session key Ks is the first 2 8-bit blocks or elements of KaPacket_dBlocks
         String Ks_padded = KbPacket_dBlocks.get(0).concat(KbPacket_dBlocks.get(1));
+        System.out.println("Padded session key: " + Ks_padded);
         //we know Ks_padded has 6 leading zeros in elements 0-5
-        String Ks = Ks_padded.substring(6, 15);
+        String Ks = Ks_padded.substring(6, 16);
+        System.out.println("Recovered session key Ks: " + Ks);
         //hooray! Bob now has the session key
 
         //send session key to Alice now?
@@ -116,6 +119,7 @@ public class Bob {
         //a_out.flush();
 
         String answer = a_in.readLine();
+        System.out.println(answer);
         if(answer.equals("success")) {
             System.out.println(Ks);
             System.out.println("Needleshoes has been a success!");
